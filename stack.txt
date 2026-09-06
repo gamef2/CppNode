@@ -1,0 +1,269 @@
+#include <iostream>
+#include <cassert>
+using namespace std;
+/* 线性表的双向链表存储结构 */
+typedef struct Node
+{/* 数据域 */
+	int data;
+	/* 前驱后继指针 */
+	struct Node *prior, *next;
+}NODE, *PNODE;
+
+/* 产生空的双向循环链表pHead */
+PNODE CreateList()
+{/* 创建头结点 */
+	PNODE pHead = new NODE;
+	assert(pHead != NULL);
+	pHead->data = 0;
+	/* 将头结点的前驱后继都指向头结点，这样构成了一个空表 */
+	pHead->next = pHead->prior = pHead;
+	return pHead;
+}
+/* 若pHead为空表（空表就是头结点的前驱后继都指向头结点），则返回1，否则返回0 */
+bool ListEmpty(PNODE pHead)
+{
+	return pHead->next == pHead && pHead->prior == pHead;
+}
+/* 返回pHead中数据元素个数 */
+int ListLength(PNODE pHead)
+{
+	int len = 0;
+	/* p指向第一个结点 */
+	PNODE p = pHead->next;
+	/* p没到表头 */
+	while (p!=pHead)
+	{
+		++len;
+		p = p->next;
+	}
+	return len;
+}
+/* 在双向链表L中返回第pos个元素的位置指针  */
+PNODE GetElemP(PNODE pHead,int pos)
+{
+	int cur = 1;
+	PNODE p = pHead;
+	while (cur <= pos)
+	{
+		p = p->next;
+		++cur;
+	}
+	return p;
+}
+/* 在带头结点的双链循环线性表pHead中第pos个位置之前插入元素data，
+// i的合法值为1≤pos≤表长+1 */
+bool ListInsert(PNODE pHead, int pos, int data)
+{/* pos值不合法 */
+	if (pos<1 || pos>ListLength(pHead) + 1)
+		return false;
+	/* 在pHead中确定第pos-1个元素的位置指针p */
+	PNODE p = GetElemP(pHead, pos - 1);
+	/* p=NULL,即第pos-1个元素不存在 */
+	assert(p != NULL);
+	PNODE pNew = new NODE;
+	assert(pNew != NULL);
+	/* 在第pos-1个元素之后插入 */
+	pNew->data = data;
+	pNew->prior = p;
+	pNew->next = p->next;
+	p->next->prior = pNew;
+	p->next = pNew;
+	return true;
+}
+/* 删除带头结点的双链循环线性表pHead的第pos个元素,pos的合法值为1≤pos≤表长 */
+bool ListDelete(PNODE pHead, int pos, int *data)
+{/* pos值不合法 */
+	if (pos<1 || pos>ListLength(pHead))
+		return false;
+	/* 在pHead中确定第pos个元素的位置指针p */
+	PNODE p = GetElemP(pHead, pos);
+	/* p=NULL,即第pos个元素不存在 */
+	assert(p != NULL);
+	*data = p->data;
+	p->next->prior = p->prior;
+	p->prior->next = p->next;
+	delete p;
+	return true;
+}
+/* 将pHead重置为空表 */
+bool ListDestroy(PNODE pHead)
+{
+	/* p指向第一个结点 */
+	PNODE q, p = pHead->next;
+	/* p没到表头 */
+	while (p != pHead)
+	{
+		q = p->next;
+		delete p;
+		p = q;
+	}
+	/* 头结点的两个指针域均指向自身，构成空表 */
+	pHead->next = p->prior = pHead;
+	return true;
+}
+/* 销毁双向循环链表pHead */
+bool ListCleanup(PNODE pHead)
+{/* p指向第一个结点 */
+	PNODE p = pHead;
+	ListDestroy(p);//调用销毁
+	delete pHead;
+	return true;
+}
+
+/* 当第pos个元素存在时,其值赋给data并返回1,否则返回0 */
+bool GetElem(PNODE pHead, int pos, int *data)
+{
+	/* i为计数器 */
+	int i = 0;
+	PNODE p = pHead->next;
+	/* 顺指针向后查找,直到p指向pos的元素或p指向头结点 */
+	while (p!=pHead&&i<pos-1)
+	{
+		p = p->next;
+		++i;
+	}
+	/* pos位置的元素不存在 */
+	if (p == pHead || i > pos - 1)
+		return false;
+	/* 取pos位置的元素 */
+	*data = p->data;
+	return true;
+}
+
+/* 返回pHead中第1个与data比较的数据元素的位序。
+ * 若这样的数据元素不存在，则返回值为0 */
+int LocateElem(PNODE pHead, int data)
+{
+	int i = 0;
+	/* p指向第1个元素 */
+	PNODE p = pHead->next;
+	while (p!=pHead)
+	{
+		i++;
+		/* 找到这样的数据元素 */
+		if (p->data == data)
+			return i;
+		p = p->next;
+	}
+	return false;
+}
+
+/* 若cur是pHead的数据元素，且不是第一个，则用data返回它的前驱 */
+bool GetPrior(PNODE pHead, int cur, int *data)
+{/* p指向第2个元素 */
+	PNODE p = pHead->next->next;
+	/* p没到表头 */
+	while (p!=pHead)
+	{
+		if (p->data == cur)
+		{
+			*data = p->prior->data;
+			return true;
+		}
+		p = p->next;
+	}
+	return false;
+}
+/* 若cur是pHead的数据元素，且不是最后一个，则用data返回它的后继 */
+bool GetNext(PNODE pHead, int cur, int *data)
+{/* p指向第2个元素 */
+	PNODE p = pHead->next->next;
+	/* p没到表头 */
+	while (p != pHead)
+	{
+		if (p->prior->data == cur)
+		{
+			*data = p->data;
+			return true;
+		}
+		p = p->next;
+	}
+	return false;
+}
+
+/* 由双链循环线性表pHead的头结点出发,正序对每个数据元素输出 */
+void ListTraverse(PNODE pHead)
+{
+	PNODE p = pHead->next;
+	while (p != pHead)
+	{
+		cout << p->data << " ";
+		p = p->next;
+	}
+	cout << endl;
+}
+/* 由双链循环线性表pHead的头结点出发,逆序对每个数据元素输出 */
+void ListTraverseBack(PNODE pHead)
+{
+	PNODE p = pHead->prior;
+	while (p != pHead)
+	{
+		cout << p->data << " ";
+		p = p->prior;
+	}
+	cout << endl;
+}
+int main()
+{
+	PNODE node = CreateList();
+	int i, n;
+	int j;
+	int e;
+	
+	for (i = 1; i <= 5; i++)
+	{
+		/* 在第i个结点之前插入i */
+		ListInsert(node, i, i);
+	}
+
+	cout<<"正序输出链表：";
+	/* 正序输出 */
+	ListTraverse(node);
+	cout << "逆序输出链表：";
+	/* 逆序输出 */
+	ListTraverseBack(node);
+	n = 2;
+	/* 删除并释放第n个结点 */
+	ListDelete(node, n, &e);
+	cout << "删除第"<<n<<"个结点，值为"<<e<<"，其余结点为：";
+	/* 正序输出 */
+	ListTraverse(node);
+	cout << "链表的元素个数为"<< ListLength(node)<<endl;
+	cout << "链表是否空："<<ListEmpty(node)<<"(1:是 0:否)"<<endl;
+	/* 清空链表 */
+	ListDestroy(node);
+	cout << "清空后，链表是否空："<< ListEmpty(node)<<"(1:是 0:否)"<<endl;
+	for (i = 1; i <= 5; i++)
+	{
+		/* 重新插入5个结点 */
+		ListInsert(node, i, i);
+	}
+	/* 正序输出 */
+	ListTraverse(node);
+	n = 3;
+	/* 将链表的第n个元素赋值给e  */
+	j = GetElem(node, n, &e);
+	if (j)
+		cout << "链表的第"<<n<<"个元素值为"<<e<<""<<endl;
+	else
+		cout << "不存在第"<<n<<"个元素"<<endl;
+	n = 4;
+	i = LocateElem(node, n);
+	if (i)
+		cout << "等于"<<n<<"的元素是第"<<i<<"个"<<endl;
+	else
+		cout << "没有等于"<<n<<"的元素"<<endl;
+	j = GetPrior(node, n, &e);
+	if (j)
+		cout <<n<< "的前驱是"<<e<<""<<endl;
+	else
+		cout << "不存在"<<n<<"的前驱"<<endl;
+	j = GetNext(node, n, &e);
+	if (j)
+		cout << n << "的后继是" << e << ""<<endl;
+	else
+		cout << "不存在" << n << "的后继"<<endl;
+	ListCleanup(node);
+	system("pause");
+	return 0;
+}
